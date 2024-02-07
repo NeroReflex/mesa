@@ -59,7 +59,7 @@ libwayland_drm = static_library(
 # here for now as the maybe-least-bad solution.
 wp_dir = dep_wl_protocols.get_variable(pkgconfig : 'pkgdatadir', internal : 'pkgdatadir')
 wp_protos = {
-  'commit-queue-v1': 'staging/commit-queue/commit-queue-v1.xml',
+  #'commit-queue-v1': 'staging/commit-queue/commit-queue-v1.xml',
   #'commit-timing-v1': 'staging/commit-timing/commit-timing-v1.xml',
   'linux-dmabuf-unstable-v1': 'unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml',
   'presentation-time': 'stable/presentation-time/presentation-time.xml',
@@ -81,3 +81,23 @@ foreach name, xml : wp_protos
   )
   wp_files += { name: [code, header] }
 endforeach
+
+gamescope_protos = {
+  'gamescope-commit-queue-v1': 'gamescope-commit-queue-v1.xml',
+}
+foreach name, xml : gamescope_protos
+  code = custom_target(
+    name + '-protocol.c',
+    input : xml,
+    output : name + '-protocol.c',
+    command : [prog_wl_scanner, wl_scanner_arg, '@INPUT@', '@OUTPUT@'],
+  )
+  header = custom_target(
+    name + '-client-protocol.h',
+    input : xml,
+    output : name + '-client-protocol.h',
+    command : [prog_wl_scanner, 'client-header', '@INPUT@', '@OUTPUT@'],
+  )
+  wp_files += { name: [code, header] }
+endforeach
+
