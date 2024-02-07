@@ -41,7 +41,7 @@
 #include "vk_util.h"
 #include "wsi_common_entrypoints.h"
 #include "wsi_common_private.h"
-#include "commit-queue-v1-client-protocol.h"
+#include "gamescope-commit-queue-v1-client-protocol.h"
 #include "linux-dmabuf-unstable-v1-client-protocol.h"
 #include "presentation-time-client-protocol.h"
 #include "tearing-control-v1-client-protocol.h"
@@ -114,7 +114,7 @@ struct wsi_wl_display {
    /* users want per-chain wsi_wl_swapchain->present_ids.wp_presentation */
    struct wp_presentation *wp_presentation_notwrapped;
 
-   struct wp_commit_queue_manager_v1 *commit_queue_manager;
+   struct gamescope_commit_queue_manager_v1 *commit_queue_manager;
 
    struct wsi_wayland *wsi_wl;
 
@@ -170,7 +170,7 @@ struct wsi_wl_swapchain {
 
    struct wsi_wl_surface *wsi_wl_surface;
    struct wp_tearing_control_v1 *tearing_control;
-   struct wp_commit_queue_v1 *commit_queue;
+   struct gamescope_commit_queue_v1 *commit_queue;
    bool can_timestamp;
 
    struct wl_callback *frame;
@@ -944,9 +944,9 @@ registry_handle_global(void *data, struct wl_registry *registry,
    } else if (strcmp(interface, wp_tearing_control_manager_v1_interface.name) == 0) {
       display->tearing_control_manager =
          wl_registry_bind(registry, name, &wp_tearing_control_manager_v1_interface, 1);
-   } else if (strcmp(interface, wp_commit_queue_manager_v1_interface.name) == 0) {
+   } else if (strcmp(interface, gamescope_commit_queue_manager_v1_interface.name) == 0) {
       display->commit_queue_manager =
-         wl_registry_bind(registry, name, &wp_commit_queue_manager_v1_interface, 1);
+         wl_registry_bind(registry, name, &gamescope_commit_queue_manager_v1_interface, 1);
    }
 }
 
@@ -974,7 +974,7 @@ wsi_wl_display_finish(struct wsi_wl_display *display)
    if (display->wp_presentation_notwrapped)
       wp_presentation_destroy(display->wp_presentation_notwrapped);
    if (display->commit_queue_manager)
-      wp_commit_queue_manager_v1_destroy(display->commit_queue_manager);
+      gamescope_commit_queue_manager_v1_destroy(display->commit_queue_manager);
    if (display->tearing_control_manager)
       wp_tearing_control_manager_v1_destroy(display->tearing_control_manager);
    if (display->wl_display_wrapper)
@@ -2063,8 +2063,8 @@ set_timestamp(struct wsi_wl_swapchain *chain)
 
    timespec_from_nsec(&target_ts, target);
 
-   wp_commit_queue_v1_set_queue_mode(chain->commit_queue,
-                                     WP_COMMIT_QUEUE_V1_QUEUE_MODE_FIFO);
+   gamescope_commit_queue_v1_set_queue_mode(chain->commit_queue,
+                                     GAMESCOPE_COMMIT_QUEUE_V1_QUEUE_MODE_FIFO);
    chain->last_target_time = target;
 }
 
@@ -2315,7 +2315,7 @@ wsi_wl_swapchain_chain_free(struct wsi_wl_swapchain *chain,
       wl_event_queue_destroy(chain->queue);
 
    if (chain->commit_queue)
-      wp_commit_queue_v1_destroy(chain->commit_queue);
+      gamescope_commit_queue_v1_destroy(chain->commit_queue);
 
 
    vk_free(pAllocator, (void *)chain->drm_modifiers);
@@ -2375,7 +2375,7 @@ wsi_wl_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
          old_chain->tearing_control = NULL;
       }
       if (old_chain->commit_queue) {
-         wp_commit_queue_v1_destroy(old_chain->commit_queue);
+         gamescope_commit_queue_v1_destroy(old_chain->commit_queue);
          old_chain->commit_queue = NULL;
          old_chain->can_timestamp = false;
       }
@@ -2508,7 +2508,7 @@ wsi_wl_surface_create_swapchain(VkIcdSurfaceBase *icd_surface,
    chain->legacy_fifo_ready = true;
    struct wsi_wl_display *dpy = chain->wsi_wl_surface->display;
    if (dpy->commit_queue_manager) {
-      chain->commit_queue = wp_commit_queue_manager_v1_get_queue_controller(dpy->commit_queue_manager,
+      chain->commit_queue = gamescope_commit_queue_manager_v1_get_queue_controller(dpy->commit_queue_manager,
                                                                             chain->wsi_wl_surface->surface);
       chain->can_timestamp = true;
    }
